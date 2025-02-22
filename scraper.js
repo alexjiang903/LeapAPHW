@@ -27,7 +27,7 @@ async function runWebScraper() {
             behavior: 'allow',
             downloadPath: downloadPath
         });
-        console.log(`📂 Files will be downloaded to: ${downloadPath}`); 
+        console.log(`Files will be downloaded to: ${downloadPath}`); 
 
         console.log("Attempting to login into LeapAP...");
 
@@ -37,7 +37,7 @@ async function runWebScraper() {
         await page.click('input[value="Sign In"]');
         await page.waitForSelector('title',{timeout: 30000}); //wait for the "Welcome Co op" title to be visible
         
-        console.log("Successful login to LeapAP. Fetching PDF...");
+        console.log("Successful login to LeapAP. Fetching PDF:");
         
         //PDF parsing code here...
         await page.waitForSelector('.nav-link.dropdown-toggle', { timeout: 10000 });
@@ -72,7 +72,7 @@ async function runWebScraper() {
     
         await page.waitForSelector('.kv-file-download', { timeout: 5000 }); // Wait for the button to appear
         await page.click('.kv-file-download'); // Click the download button
-        console.log("✅ PDF download button clicked...");
+        console.log("PDF download initiated...");
         
         const fileName = 'Invoice file.pdf'; //Check if download complete:
         const filePath = path.join(downloadPath, fileName);
