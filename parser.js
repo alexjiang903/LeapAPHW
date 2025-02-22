@@ -17,31 +17,29 @@ fs.readFile(filePath, 'utf8', (err, data) => {
     }
 
     const cleanedData = data.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-    console.log("text file after cleanup: ", cleanedData);
-    
-    const customerNumberMatch = cleanedData.match(/Customer no\. - Account NO./gi);
-    const accountNumberMatch = cleanedData.match(/Account Number:\s*(\d+)/g);
-    const billPeriodMatch = cleanedData.match(/Bill Period:\s*([\d\-]+)/g);
-    const billNumberMatch = cleanedData.match(/Bill Number:\s*(\d+)/g);
-    const billDateMatch = cleanedData.match(/Bill Date:\s*([\d\/]+)/g);
-    const totalNewChargesMatch = cleanedData.match(/Total New Charges:\s*\$([\d,]+\.\d{2})/g);
-    const testRegex = cleanedData.match(/king gg/g);
-    const test2 = cleanedData.match(/Hello World/gi);
 
+    const customerMatch = cleanedData.match(/Customer no\. - Account no\.\s+(\d+) - (\d+)/g); //customer and account number
+    const billDateMatch = cleanedData.match(/Bill date:\s+([A-Za-z]+ \d{1,2}, \d{4})/g); 
+    const billNumberMatch = cleanedData.match(/Bill number:\s+(\d+)/g);
+    const billPeriodInfo = cleanedData.match(/Bill\s*period:\s*(.*?)\s*(\w{3,} \d{1,2}, \d{4})\s*to\s*(\w{3,} \d{1,2}, \d{4})/g); 
+    const totalNewChargesMatch = cleanedData.match(/Total\s*new\s*charges\s*\$?\s*([\d,]+(?:\.\d{2})?)/g)
 
-    //console.log(customerNumberMatch);
-    //console.log(customerNumberMatch);
-    //console.log(testRegex);
-    //console.log(test2);
+    //2nd pass of regex to retrieve key values 
+    const customerNumber = customerMatch[0].match(/\d{7}/)[0]; //customer number is 7 digits 
+    const accountNumber = customerMatch[0].match(/\d{8}/)[0]; //account number is 8 digits
+    const billDate = billDateMatch[0].match(/[A-Za-z]+ \d{1,2}, \d{4}/)[0];
+    const billNumber = billNumberMatch[0].match(/\d{8}/)[0];
+    const billPeriodRange = billPeriodInfo[0].match(/(\w{3,} \d{1,2}, \d{4})\s*to\s*(\w{3,} \d{1,2}, \d{4})/g)[0]; // "(START_DATE) to (END_DATE)"
+    const totalNewCharges = totalNewChargesMatch[0].match(/\$\d.\d{3}.\d*/)[0]; //total new charges
+
 
     const result = {
-        'Customer Number': customerNumberMatch ? customerNumberMatch[1] : 'undefined',
-        'Account Number': accountNumberMatch ? accountNumberMatch[1] : 'undefined',
-        'Bill Period': billPeriodMatch ? billPeriodMatch[1] : 'undefined',
-        'Bill Number': billNumberMatch ? billNumberMatch[1] : 'undefined',
-        'Bill Date': billDateMatch ? billDateMatch[1] : 'undefined',
-        'Total New Charges': totalNewChargesMatch ? `$${totalNewChargesMatch[1]}` : 'undefined',
-        'Test Regex': testRegex ? testRegex[0] : 'undefined'
+        'Customer Number': customerNumber,
+        'Account Number': accountNumber,
+        'Bill Date': billDate,
+        'Bill Number': billNumber,
+        'Bill Period': billPeriodRange,
+        'Total New Charges': totalNewCharges
     };
 
 
@@ -52,9 +50,5 @@ fs.readFile(filePath, 'utf8', (err, data) => {
         const color = value === 'undefined' ? '\x1b[31m' : '\x1b[32m';
         console.log(`\x1b[1m${key}:\x1b[0m ${color}${value}\x1b[0m`); //green for parsed value, red for undefined
     }
-    console.log("=====================================");
-
-
-    
-
+    console.log("====================================="); 
 });
