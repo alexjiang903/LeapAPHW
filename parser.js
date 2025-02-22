@@ -23,11 +23,21 @@ fs.readFile(filePath, 'utf8', (err, data) => {
     const billNumberMatch = cleanedData.match(/Bill number:\s+(\d+)/g);
     const billPeriodInfo = cleanedData.match(/Bill\s*period:\s*(.*?)\s*(\w{3,} \d{1,2}, \d{4})\s*to\s*(\w{3,} \d{1,2}, \d{4})/g); 
     const totalNewChargesMatch = cleanedData.match(/Total\s*new\s*charges\s*\$?\s*([\d,]+(?:\.\d{2})?)/g);
-    console.log(totalNewChargesMatch);
+    
+    //2nd pass of regex to retrieve key values (return N/A to handle errors gracefully)
+    const customerAccountNumber = customerMatch[0].match(/(\d{7})\s*-\s*(\d{8})/) || "N/A"; //assuming fixed number of digits (matching test txt file)
+    
+    console.log(customerAccountNumber);
+    console.log(typeof customerAccountNumber);
 
-    //2nd pass of regex to retrieve key values (N/A to handle errors gracefully)
-    const customerNumber = customerMatch[0].match(/\d{7}/)?.[0] || "N/A"; //customer number is 7 digits 
-    const accountNumber = customerMatch[0].match(/\d{8}/)?.[0] || "N/A"; //account number is 8 digits
+    let customerNumber = "N/A"; //assume values not parsed initially
+    let accountNumber = "N/A";
+
+    if (typeof customerAccountNumber === 'object') {
+        customerNumber = customerAccountNumber[1]; //assuming customer number is always 7 digits
+        accountNumber = customerAccountNumber[2]; //assuming account number is always 8 digits  
+    }
+    
     const billDate = billDateMatch[0].match(/[A-Za-z]+ \d{1,2}, \d{4}/)?.[0] || "N/A"; 
     const billNumber = billNumberMatch[0].match(/\d{8}/)?.[0] || "N/A"; 
     
