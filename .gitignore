@@ -133,4 +133,5 @@ dist
 # other files
 local_test.txt
 *.pdf
+!Compiled_Reports/*
 package-lock.json

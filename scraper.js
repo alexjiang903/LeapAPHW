@@ -1,22 +1,35 @@
 //Web scraper for Q2
-
 const LOGIN_URL = "https://app-dev.condoworks.co"
 const USERNAME = "coop.test@condoworks.co"
 const PASSWORD = "TheTest139"
+
 const puppeteer = require('puppeteer');
 const fs = require('fs'); //write the saved file to local Compiled_Reports folder
+const path = require('path');
 
+const downloadPath = path.join(__dirname, 'Compiled_Reports'); //will save in the compiled reports folder (change to whatever folder in local dir)
+
+if (!fs.existsSync(downloadPath)) {
+    fs.mkdirSync(downloadPath, { recursive: true });
+}
 
 async function runWebScraper() {
     try {
         const browser = await puppeteer.launch({
             headless: false,  
-            slowMo: 10, //set to 10 for testing purposes, 75 by default       
+            slowMo: 75,      
             defaultViewport: null 
         });
         const page = await browser.newPage();
 
-        console.log("Attempting to login to LeapAP...");
+        await page._client().send('Page.setDownloadBehavior', {
+            //configure download permissions
+            behavior: 'allow',
+            downloadPath: downloadPath
+        });
+        console.log(`📂 Files will be downloaded to: ${downloadPath}`); 
+
+        console.log("Attempting to login into LeapAP...");
 
         await page.goto(LOGIN_URL, { waitUntil: 'networkidle2' });
         await page.type('input[name="Email"]', USERNAME, { delay: 100 });
@@ -33,42 +46,50 @@ async function runWebScraper() {
         await page.waitForSelector('a[href="/invoices/all"]') //navigate to Invoices -> All
         await page.click('a[href="/invoices/all"]');
 
-        console.log("succesful navtivation to Invoices -> All"); 
         
         //Search #123 in the invoice number search bar
-
         await page.waitForSelector('th:nth-of-type(9) input', { timeout: 10000});
         await page.type('th:nth-of-type(9) input', '123', { delay: 150 });
         await page.keyboard.press('Enter');
-
-        console.log("Searching for invoice 123444...");
-
         await page.waitForSelector('table#grid', { timeout: 10000 }); //wait for table to load using table's id grid
-        console.log("search results loaded");
+        
+        await page.waitForFunction(() => {
+            const rows = document.querySelectorAll('table#grid tbody tr');
+            return Array.from(rows).some(row => row.innerText.includes("123444"));
+        }, { timeout: 10000 });
+        
         
         const invoiceRow = await page.waitForSelector('::-p-xpath(//tr[td[contains(text(), "123444")]])', { timeout: 10000 });
-        console.log(invoiceRow);
+    
+        const searchIcon = await invoiceRow.$('a[title="View/Edit"]'); //find magnifying glass icon to click on in the row
+    
+        if (searchIcon) {
+            await page.evaluate(el => el.scrollIntoView(), searchIcon); 
+            await searchIcon.click();
+        } 
 
-        const test = await page.waitForSelector('a[title="View/Edit"]', { timeout: 3000 });
-        if (test) {
-            const html = await page.evaluate(el => el.outerHTML, test);
-            console.log(html);
-            
+        //Download PDF and save to local directory (Compiled_Reports)
+    
+        await page.waitForSelector('.kv-file-download', { timeout: 5000 }); // Wait for the button to appear
+        await page.click('.kv-file-download'); // Click the download button
+        console.log("✅ PDF download button clicked...");
+        
+        const fileName = 'Invoice file.pdf'; //Check if download complete:
+        const filePath = path.join(downloadPath, fileName);
+
+        while (!fs.existsSync(filePath)) {
+            //While the downloaded file is not complete, set timeout to 0.5 seconds
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
-
         
-        await page.click('a[title="View/Edit"]');
-        
-        console.log("Navigated to invoice 123444 details page");
-        //await browser.close();
-        //console.log("Scraping finished and PDF saved to local directory.");
+        console.log(`${fileName} successfully saved at ${filePath}`);
+        await browser.close();
     }
+
     catch (error) {
         console.error("Error running web scraper: ", error);
     }
 }
-
-
 
 runWebScraper();
 
